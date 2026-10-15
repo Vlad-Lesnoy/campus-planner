@@ -1,4 +1,5 @@
 import React from 'react';
+
 import {
     View,
     Text,
@@ -12,13 +13,15 @@ interface TaskCardProps {
     task: Task;
     onToggle: (id: string) => void;
     onDelete: (id: string) => void;
+    onPress: () => void;
 }
 
 export default function TaskCard({
-    task,
-    onToggle,
-    onDelete,
-    }: TaskCardProps) {
+                                     task,
+                                     onToggle,
+                                     onDelete,
+                                     onPress,
+                                 }: TaskCardProps) {
     const priorityText = {
         low: 'Низкий',
         medium: 'Средний',
@@ -26,107 +29,104 @@ export default function TaskCard({
     };
 
     return (
-        <View
-            style={[
-                styles.card,
-                task.isCompleted && styles.completedCard,
-            ]}
+        <TouchableOpacity
+            onPress={onPress}
+            activeOpacity={0.8}
         >
-            <View style={styles.content}>
+            <View
+                style={[
+                    styles.card,
+                    task.isCompleted &&
+                    styles.completedCard,
+                ]}
+            >
                 <Text
                     style={[
                         styles.title,
-                        task.isCompleted && styles.completedTitle,
+                        task.isCompleted &&
+                        styles.completedTitle,
                     ]}
                 >
                     {task.title}
                 </Text>
 
-                <Text style={styles.subject}>
+                <Text style={styles.text}>
                     Предмет: {task.subject}
                 </Text>
 
-                <Text style={styles.priority}>
+                <Text style={styles.text}>
                     Приоритет: {priorityText[task.priority]}
                 </Text>
 
-                <Text style={styles.status}>
-                    Статус: {task.isCompleted ? 'Выполнено' : 'Активно'}
+                <Text style={styles.text}>
+                    Статус:{' '}
+                    {task.isCompleted
+                        ? 'Выполнено'
+                        : 'Активно'}
                 </Text>
-            </View>
 
-            <View style={styles.buttons}>
-                <TouchableOpacity
-                    style={styles.completeButton}
-                    onPress={() => onToggle(task.id)}
-                >
-                    <Text style={styles.buttonText}>
-                        {task.isCompleted ? 'Вернуть' : 'Выполнить'}
-                    </Text>
-                </TouchableOpacity>
+                <View style={styles.buttons}>
+                    <TouchableOpacity
+                        style={styles.completeButton}
+                        onPress={() =>
+                            onToggle(task.id)
+                        }
+                    >
+                        <Text style={styles.buttonText}>
+                            {task.isCompleted
+                                ? 'Вернуть'
+                                : 'Выполнить'}
+                        </Text>
+                    </TouchableOpacity>
 
-                <TouchableOpacity
-                    style={styles.deleteButton}
-                    onPress={() => onDelete(task.id)}
-                >
-                    <Text style={styles.buttonText}>Удалить</Text>
-                </TouchableOpacity>
+                    <TouchableOpacity
+                        style={styles.deleteButton}
+                        onPress={() =>
+                            onDelete(task.id)
+                        }
+                    >
+                        <Text style={styles.buttonText}>
+                            Удалить
+                        </Text>
+                    </TouchableOpacity>
+                </View>
             </View>
-        </View>
+        </TouchableOpacity>
     );
 }
 
 const styles = StyleSheet.create({
     card: {
-        backgroundColor: '#ffffff',
+        backgroundColor: '#FFFFFF',
         borderRadius: 12,
         padding: 16,
         marginBottom: 12,
         elevation: 3,
-        shadowColor: '#000',
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        shadowOffset: {
-            width: 0,
-            height: 2,
-        },
     },
 
     completedCard: {
         opacity: 0.55,
     },
 
-    content: {
-        marginBottom: 12,
-    },
-
     title: {
         fontSize: 18,
         fontWeight: 'bold',
-        marginBottom: 6,
+        marginBottom: 8,
     },
 
     completedTitle: {
         textDecorationLine: 'line-through',
     },
 
-    subject: {
+    text: {
         fontSize: 14,
         marginBottom: 4,
-    },
-
-    priority: {
-        fontSize: 14,
-        marginBottom: 4,
-    },
-
-    status: {
-        fontSize: 14,
     },
 
     buttons: {
         flexDirection: 'row',
         gap: 8,
+        marginTop: 10,
     },
 
     completeButton: {
@@ -146,7 +146,7 @@ const styles = StyleSheet.create({
     },
 
     buttonText: {
-        color: '#ffffff',
+        color: '#FFFFFF',
         fontWeight: '600',
     },
 });
