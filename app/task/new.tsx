@@ -1,43 +1,37 @@
-import React from 'react';
-
-import {
-    View,
-    StyleSheet,
-} from 'react-native';
-
 import { router } from 'expo-router';
+import { Text } from 'react-native';
 
-import TaskForm from '../../src/components/TaskForm';
-import { useTasks } from '../../src/context/TaskContext';
-import { TaskPriority } from '../../src/types/task';
+import { useTasks } from '../../src/hooks/useTasks';
+import { useTheme } from '../../src/context/ThemeContext';
+import { TaskForm } from '../../src/components/task/TaskForm';
+import { Screen } from '../../src/components/ui/Screen';
+import { colors } from '../../src/theme/colors';
+import { spacing } from '../../src/theme/spacing';
 
 export default function NewTaskScreen() {
-    const { addTask } = useTasks();
+    const { createTask } = useTasks();
+    const { theme } = useTheme();
+    const palette = colors[theme];
 
-    const handleSubmit = (
-        title: string,
-        subject: string,
-        priority: TaskPriority
-    ) => {
-        addTask(title, subject, priority);
-
-        router.back();
+    const handleSubmit = (input: Parameters<typeof createTask>[0]) => {
+        createTask(input);
+        router.replace('/');
     };
 
     return (
-        <View style={styles.container}>
-            <TaskForm
-                mode="create"
-                onSubmit={handleSubmit}
-            />
-        </View>
+        <Screen>
+            <Text
+                style={{
+                    color: palette.text,
+                    fontSize: 24,
+                    fontWeight: '700',
+                    marginBottom: spacing.sm,
+                }}
+            >
+                Новая задача
+            </Text>
+
+            <TaskForm onSubmit={handleSubmit} />
+        </Screen>
     );
 }
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#F2F4F7',
-        padding: 16,
-    },
-});

@@ -1,141 +1,81 @@
-import React from 'react';
-
-import {
-    View,
-    Text,
-    TouchableOpacity,
-    StyleSheet,
-} from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
+import { router } from 'expo-router';
 
 import { useTheme } from '../src/context/ThemeContext';
+import { Screen } from '../src/components/ui/Screen';
+import { AppButton } from '../src/components/ui/AppButton';
+import { colors } from '../src/theme/colors';
+import { spacing } from '../src/theme/spacing';
 
 export default function SettingsScreen() {
-    const { theme, setTheme } =
-        useTheme();
-
-    const isDark = theme === 'dark';
+    const { theme, setTheme } = useTheme();
+    const palette = colors[theme];
 
     return (
-        <View
-            style={[
-                styles.container,
-                isDark && styles.darkContainer,
-            ]}
-        >
-            <Text
-                style={[
-                    styles.title,
-                    isDark && styles.darkText,
-                ]}
-            >
-                Настройки приложения
+        <Screen>
+            <Text style={[styles.title, { color: palette.text }]}>
+                Настройки
             </Text>
 
-            <Text
-                style={[
-                    styles.subtitle,
-                    isDark && styles.darkSecondaryText,
-                ]}
-            >
-                Выберите тему интерфейса
+            <Text style={[styles.description, { color: palette.secondaryText }]}>
+                Выбери оформление приложения.
             </Text>
 
-            <TouchableOpacity
+            <View
                 style={[
-                    styles.themeButton,
-                    theme === 'light' &&
-                    styles.selectedButton,
+                    styles.section,
+                    { backgroundColor: palette.surface, borderColor: palette.border },
                 ]}
-                onPress={() =>
-                    setTheme('light')
-                }
             >
-                <Text
-                    style={[
-                        styles.themeText,
-                        theme === 'light' &&
-                        styles.selectedText,
-                    ]}
-                >
-                    Светлая тема
+                <Text style={[styles.sectionTitle, { color: palette.text }]}>
+                    Тема приложения
                 </Text>
-            </TouchableOpacity>
 
-            <TouchableOpacity
-                style={[
-                    styles.themeButton,
-                    theme === 'dark' &&
-                    styles.selectedButton,
-                ]}
-                onPress={() =>
-                    setTheme('dark')
-                }
-            >
-                <Text
-                    style={[
-                        styles.themeText,
-                        theme === 'dark' &&
-                        styles.selectedText,
-                    ]}
-                >
-                    Тёмная тема
-                </Text>
-            </TouchableOpacity>
-        </View>
+                <AppButton
+                    title={theme === 'light' ? '✓ Светлая тема' : 'Светлая тема'}
+                    variant={theme === 'light' ? 'primary' : 'secondary'}
+                    onPress={() => setTheme('light')}
+                />
+
+                <AppButton
+                    title={theme === 'dark' ? '✓ Тёмная тема' : 'Тёмная тема'}
+                    variant={theme === 'dark' ? 'primary' : 'secondary'}
+                    onPress={() => setTheme('dark')}
+                />
+            </View>
+
+            <View style={styles.footer}>
+                <AppButton
+                    title="Вернуться к задачам"
+                    variant="secondary"
+                    onPress={() => router.back()}
+                />
+            </View>
+        </Screen>
     );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#F2F4F7',
-        padding: 20,
-    },
-
-    darkContainer: {
-        backgroundColor: '#121212',
-    },
-
     title: {
-        fontSize: 25,
-        fontWeight: 'bold',
-        marginBottom: 8,
+        fontSize: 28,
+        fontWeight: '700',
     },
-
-    subtitle: {
-        fontSize: 16,
-        color: '#666666',
-        marginBottom: 25,
+    description: {
+        fontSize: 14,
+        marginTop: spacing.xs,
+        marginBottom: spacing.md,
     },
-
-    darkText: {
-        color: '#FFFFFF',
-    },
-
-    darkSecondaryText: {
-        color: '#BBBBBB',
-    },
-
-    themeButton: {
-        backgroundColor: '#FFFFFF',
-        padding: 16,
-        borderRadius: 10,
-        marginBottom: 12,
+    section: {
+        padding: spacing.md,
         borderWidth: 1,
-        borderColor: '#DDDDDD',
+        borderRadius: 12,
+        gap: spacing.md,
     },
-
-    selectedButton: {
-        backgroundColor: '#2196F3',
-        borderColor: '#2196F3',
-    },
-
-    themeText: {
-        fontSize: 16,
+    sectionTitle: {
+        fontSize: 18,
         fontWeight: '600',
     },
-
-    selectedText: {
-        color: '#FFFFFF',
+    footer: {
+        marginTop: spacing.md,
     },
 });

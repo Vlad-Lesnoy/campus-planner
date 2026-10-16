@@ -1,359 +1,223 @@
-import React, { useMemo, useState } from 'react';
-
-import {
-    View,
-    Text,
-    StyleSheet,
-    FlatList,
-    TouchableOpacity,
-} from 'react-native';
-
+import { useMemo, useState } from 'react';
+import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 
-import TaskCard from '../src/components/TaskCard';
-import { useTasks } from '../src/context/TaskContext';
+import type { TaskStatus } from '../src/types/task';
+import { useTasks } from '../src/hooks/useTasks';
 import { useTheme } from '../src/context/ThemeContext';
-
-type Filter = 'all' | 'active' | 'completed';
+import { Screen } from '../src/components/ui/Screen';
+import { AppButton } from '../src/components/ui/AppButton';
+import { AppInput } from '../src/components/ui/AppInput';
+import { EmptyState } from '../src/components/ui/EmptyState';
+import { TaskCard } from '../src/components/task/TaskCard';
+import { countTasks, filterTasks, sortTasksByPriority } from '../src/utils/task';
+import { colors } from '../src/theme/colors';
+import { spacing } from '../src/theme/spacing';
 
 export default function HomeScreen() {
-    const {
-        tasks,
-        toggleTask,
-        deleteTask,
-    } = useTasks();
-
+    const { tasks, isTasksLoading, removeTask, toggleTaskStatus } = useTasks();
     const { theme } = useTheme();
+    const palette = colors[theme];
+    const [search, setSearch] = useState('');
+    const [statusFilter, setStatusFilter] = useState<
+        'all' | TaskStatus
+    >('all');
 
-    const [filter, setFilter] =
-        useState<Filter>('all');
+    const stats = countTasks(tasks);
 
-    const isDark = theme === 'dark';
+    const visibleTasks = useMemo(() => {
+        const searchedTasks = filterTasks(tasks, search);
 
-    const completedCount = tasks.filter(
-        (task) => task.isCompleted
-    ).length;
+        const filteredTasks =
+            statusFilter === 'all'
+                ? searchedTasks
+                : searchedTasks.filter(
+                    (task) => task.status === statusFilter
+                );
 
-    const filteredTasks = useMemo(() => {
-        if (filter === 'active') {
-            return tasks.filter(
-                (task) => !task.isCompleted
-            );
-        }
-
-        if (filter === 'completed') {
-            return tasks.filter(
-                (task) => task.isCompleted
-            );
-        }
-
-        return tasks;
-    }, [tasks, filter]);
+        return sortTasksByPriority(filteredTasks);
+    }, [tasks, search, statusFilter]);
 
     return (
-        <View
-            style={[
-                styles.container,
-                isDark && styles.darkContainer,
-            ]}
-        >
-            <FlatList
-                data={filteredTasks}
-                keyExtractor={(item) => item.id}
-                renderItem={({ item }) => (
-                    <TaskCard
-                        task={item}
-                        onToggle={toggleTask}
-                        onDelete={deleteTask}
-                        onPress={() =>
-                            router.push({
-                                pathname: '/task/[id]',
-                                params: {
-                                    id: item.id,
-                                },
-                            })
-                        }
-                    />
-                )}
-                ListHeaderComponent={
-                    <View>
-                        <Text
-                            style={[
-                                styles.title,
-                                isDark && styles.darkText,
-                            ]}
-                        >
-                            Campus Planner
-                        </Text>
+        <Screen>
+            <View style={styles.header}>
+                <Text style={[styles.title, { color: palette.text }]}>
+                    Учебные задачи
+                </Text>
+                <Text style={{ color: palette.secondaryText }}>
+                    Планируй учёбу и следи за выполнением заданий
+                </Text>
+            </View>
 
-                        <Text
-                            style={[
-                                styles.subtitle,
-                                isDark && styles.darkSecondaryText,
-                            ]}
-                        >
-                            Планировщик учебных задач
-                        </Text>
+            <View
+                style={[
+                    styles.statistics,
+                    { backgroundColor: palette.surface, borderColor: palette.border },
+                ]}
+            >
+                <View style={styles.statisticItem}>
+                    <Text style={[styles.statisticNumber, { color: palette.primary }]}>
+                        {stats.active}
+                    </Text>
+                    <Text style={{ color: palette.secondaryText }}>Активных</Text>
+                </View>
 
-                        <View style={styles.statistics}>
-                            <View
-                                style={[
-                                    styles.statCard,
-                                    isDark && styles.darkCard,
-                                ]}
-                            >
-                                <Text
-                                    style={[
-                                        styles.statNumber,
-                                        isDark && styles.darkText,
-                                    ]}
-                                >
-                                    {tasks.length}
-                                </Text>
+                <View style={styles.statisticItem}>
+                    <Text style={[styles.statisticNumber, { color: palette.success }]}>
+                        {stats.completed}
+                    </Text>
+                    <Text style={{ color: palette.secondaryText }}>Завершённых</Text>
+                </View>
+            </View>
 
-                                <Text
-                                    style={[
-                                        styles.statText,
-                                        isDark &&
-                                        styles.darkSecondaryText,
-                                    ]}
-                                >
-                                    Всего задач
-                                </Text>
-                            </View>
-
-                            <View
-                                style={[
-                                    styles.statCard,
-                                    isDark && styles.darkCard,
-                                ]}
-                            >
-                                <Text
-                                    style={[
-                                        styles.statNumber,
-                                        isDark && styles.darkText,
-                                    ]}
-                                >
-                                    {completedCount}
-                                </Text>
-
-                                <Text
-                                    style={[
-                                        styles.statText,
-                                        isDark &&
-                                        styles.darkSecondaryText,
-                                    ]}
-                                >
-                                    Выполнено
-                                </Text>
-                            </View>
-                        </View>
-
-                        <TouchableOpacity
-                            style={styles.addButton}
-                            onPress={() =>
-                                router.push('/task/new')
-                            }
-                        >
-                            <Text style={styles.addButtonText}>
-                                + Добавить задачу
-                            </Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            style={[
-                                styles.settingsButton,
-                                isDark && styles.darkCard,
-                            ]}
-                            onPress={() =>
-                                router.push('/settings')
-                            }
-                        >
-                            <Text
-                                style={[
-                                    styles.settingsText,
-                                    isDark && styles.darkText,
-                                ]}
-                            >
-                                Настройки
-                            </Text>
-                        </TouchableOpacity>
-
-                        <View style={styles.filters}>
-                            {[
-                                ['all', 'Все'],
-                                ['active', 'Активные'],
-                                ['completed', 'Выполненные'],
-                            ].map(([value, title]) => (
-                                <TouchableOpacity
-                                    key={value}
-                                    style={[
-                                        styles.filterButton,
-                                        isDark && styles.darkCard,
-                                        filter === value &&
-                                        styles.activeFilter,
-                                    ]}
-                                    onPress={() =>
-                                        setFilter(value as Filter)
-                                    }
-                                >
-                                    <Text
-                                        style={[
-                                            styles.filterText,
-                                            isDark && styles.darkText,
-                                            filter === value &&
-                                            styles.activeFilterText,
-                                        ]}
-                                    >
-                                        {title}
-                                    </Text>
-                                </TouchableOpacity>
-                            ))}
-                        </View>
-                    </View>
-                }
-                ListEmptyComponent={
-                    <View style={styles.empty}>
-                        <Text
-                            style={[
-                                styles.emptyText,
-                                isDark && styles.darkSecondaryText,
-                            ]}
-                        >
-                            Список пока пуст
-                        </Text>
-                    </View>
-                }
-                contentContainerStyle={styles.list}
+            <AppInput
+                label="Поиск задач"
+                value={search}
+                onChangeText={setSearch}
+                placeholder="Название задачи или предмет"
             />
-        </View>
+
+            <View style={styles.filters}>
+                <View style={styles.filterButton}>
+                    <AppButton
+                        title="Все"
+                        variant={statusFilter === 'all' ? 'primary' : 'secondary'}
+                        onPress={() => setStatusFilter('all')}
+                    />
+                </View>
+
+                <View style={styles.filterButton}>
+                    <AppButton
+                        title="Активные"
+                        variant={statusFilter === 'active' ? 'primary' : 'secondary'}
+                        onPress={() => setStatusFilter('active')}
+                    />
+                </View>
+
+                <View style={styles.filterButton}>
+                    <AppButton
+                        title="Выполненные"
+                        variant={statusFilter === 'completed' ? 'primary' : 'secondary'}
+                        onPress={() => setStatusFilter('completed')}
+                    />
+                </View>
+            </View>
+
+            <View style={styles.mainActions}>
+                <View style={styles.actionButton}>
+                    <AppButton
+                        title="Добавить задачу"
+                        onPress={() => router.push('/task/new')}
+                    />
+                </View>
+                <View style={styles.actionButton}>
+                    <AppButton
+                        title="Настройки"
+                        variant="secondary"
+                        onPress={() => router.push('/settings')}
+                    />
+                </View>
+            </View>
+
+            {isTasksLoading ? (
+                <Text style={{ color: palette.secondaryText }}>
+                    Загружаем задачи...
+                </Text>
+            ) : (
+                <FlatList
+                    style={styles.list}
+                    data={visibleTasks}
+                    keyExtractor={(item) => item.id}
+                    renderItem={({ item }) => (
+                        <TaskCard
+                            task={item}
+                            onPress={() =>
+                                router.push({
+                                    pathname: '/task/[id]',
+                                    params: { id: item.id },
+                                })
+                            }
+                            onToggleStatus={() => toggleTaskStatus(item.id)}
+                            onDelete={() => removeTask(item.id)}
+                        />
+                    )}
+                    ItemSeparatorComponent={() => <View style={{ height: spacing.sm }} />}
+                    ListEmptyComponent={
+                        <EmptyState
+                            icon={search.trim() ? '🔎' : '📚'}
+                            title={
+                                search.trim() || statusFilter !== 'all'
+                                    ? 'Задачи не найдены'
+                                    : 'Пока нет задач'
+                            }
+                            description={
+                                search.trim()
+                                    ? 'Попробуй изменить поисковый запрос или фильтр.'
+                                    : statusFilter === 'active'
+                                        ? 'Активных задач пока нет.'
+                                        : statusFilter === 'completed'
+                                            ? 'Завершённых задач пока нет.'
+                                            : 'Добавь первую задачу, чтобы начать планирование.'
+                            }
+                            actionLabel={search.trim() ? undefined : 'Добавить задачу'}
+                            onAction={
+                                search.trim() ? undefined : () => router.push('/task/new')
+                            }
+                        />
+                    }
+                    contentContainerStyle={styles.listContent}
+                    keyboardShouldPersistTaps="handled"
+                />
+            )}
+        </Screen>
     );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#F2F4F7',
+    header: {
+        gap: spacing.xs,
     },
-
-    darkContainer: {
-        backgroundColor: '#121212',
-    },
-
-    list: {
-        padding: 16,
-        paddingBottom: 30,
-    },
-
     title: {
-        fontSize: 30,
-        fontWeight: 'bold',
-        marginBottom: 4,
+        fontSize: 28,
+        fontWeight: '700',
     },
-
-    subtitle: {
-        fontSize: 16,
-        color: '#666666',
-        marginBottom: 16,
-    },
-
-    darkText: {
-        color: '#FFFFFF',
-    },
-
-    darkSecondaryText: {
-        color: '#BBBBBB',
-    },
-
     statistics: {
         flexDirection: 'row',
-        gap: 10,
-        marginBottom: 16,
-    },
-
-    statCard: {
-        flex: 1,
-        backgroundColor: '#FFFFFF',
+        justifyContent: 'space-around',
+        padding: spacing.md,
+        borderWidth: 1,
         borderRadius: 12,
-        padding: 16,
+    },
+    statisticItem: {
         alignItems: 'center',
+        gap: spacing.xs,
     },
-
-    darkCard: {
-        backgroundColor: '#242424',
+    statisticNumber: {
+        fontSize: 24,
+        fontWeight: '700',
     },
-
-    statNumber: {
-        fontSize: 26,
-        fontWeight: 'bold',
+    mainActions: {
+        flexDirection: 'row',
+        gap: spacing.sm,
     },
-
-    statText: {
-        fontSize: 13,
-        color: '#666666',
-        marginTop: 4,
+    actionButton: {
+        flex: 1,
     },
-
-    addButton: {
-        backgroundColor: '#2196F3',
-        borderRadius: 10,
-        padding: 14,
-        alignItems: 'center',
-        marginBottom: 10,
+    list: {
+        flex: 1,
     },
-
-    addButtonText: {
-        color: '#FFFFFF',
-        fontSize: 16,
-        fontWeight: 'bold',
+    listContent: {
+        flexGrow: 1,
+        paddingVertical: spacing.sm,
+        gap: spacing.sm,
     },
-
-    settingsButton: {
-        backgroundColor: '#FFFFFF',
-        borderRadius: 10,
-        padding: 13,
-        alignItems: 'center',
-        marginBottom: 14,
-    },
-
-    settingsText: {
-        fontSize: 15,
-        fontWeight: '600',
-    },
-
     filters: {
         flexDirection: 'row',
-        gap: 8,
-        marginBottom: 16,
+        flexWrap: 'wrap',
+        gap: spacing.sm,
     },
-
     filterButton: {
-        flex: 1,
-        backgroundColor: '#FFFFFF',
-        borderRadius: 8,
-        paddingVertical: 10,
-        alignItems: 'center',
-    },
-
-    activeFilter: {
-        backgroundColor: '#2196F3',
-    },
-
-    filterText: {
-        fontWeight: '600',
-    },
-
-    activeFilterText: {
-        color: '#FFFFFF',
-    },
-
-    empty: {
-        padding: 30,
-        alignItems: 'center',
-    },
-
-    emptyText: {
-        fontSize: 16,
-        color: '#777777',
+        flexGrow: 1,
+        flexBasis: 90,
     },
 });

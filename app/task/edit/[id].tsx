@@ -1,77 +1,63 @@
-import React from 'react';
+import { router, useLocalSearchParams } from 'expo-router';
+import { Text } from 'react-native';
 
-import {
-    View,
-    Text,
-    StyleSheet,
-} from 'react-native';
-
-import {
-    router,
-    useLocalSearchParams,
-} from 'expo-router';
-
-import TaskForm from '../../../src/components/TaskForm';
-import { useTasks } from '../../../src/context/TaskContext';
-import { TaskPriority } from '../../../src/types/task';
+import { useTasks } from '../../../src/hooks/useTasks';
+import { useTheme } from '../../../src/context/ThemeContext';
+import { TaskForm } from '../../../src/components/task/TaskForm';
+import { Screen } from '../../../src/components/ui/Screen';
+import { EmptyState } from '../../../src/components/ui/EmptyState';
+import { colors } from '../../../src/theme/colors';
+import { spacing } from '../../../src/theme/spacing';
 
 export default function EditTaskScreen() {
-    const { id } =
-        useLocalSearchParams<{
-            id: string;
-        }>();
+    const { id } = useLocalSearchParams<{ id: string }>();
+    const { getTaskById, updateTask } = useTasks();
+    const { theme } = useTheme();
+    const palette = colors[theme];
 
-    const {
-        getTask,
-        updateTask,
-    } = useTasks();
-
-    const task = getTask(id);
+    const task = getTaskById(id);
 
     if (!task) {
         return (
-            <View style={styles.center}>
-                <Text>Задача не найдена</Text>
-            </View>
+            <Screen>
+                <EmptyState
+                    icon="🔎"
+                    title="Задача не найдена"
+                    description="Невозможно отредактировать удалённую задачу."
+                    actionLabel="Вернуться назад"
+                    onAction={() => router.back()}
+                />
+            </Screen>
         );
     }
 
-    const handleSubmit = (
-        title: string,
-        subject: string,
-        priority: TaskPriority
-    ) => {
-        updateTask(
-            task.id,
-            title,
-            subject,
-            priority
-        );
-
-        router.back();
+    const handleSubmit = (input: Parameters<typeof updateTask>[1]) => {
+        updateTask(task.id, input);
+        router.replace({
+            pathname: '/task/[id]',
+            params: { id: task.id },
+        });
     };
 
     return (
-        <View style={styles.container}>
+        <Screen>
+            <Text
+                style={{
+                    color: palette.text,
+                    fontSize: 24,
+                    fontWeight: '700',
+                    marginBottom: spacing.sm,
+                }}
+            >
+                Редактирование задачи
+            </Text>
+
             <TaskForm
-                mode="edit"
+                key={task.id}
                 initialTask={task}
+                submitLabel="Сохранить изменения"
                 onSubmit={handleSubmit}
             />
-        </View>
+        </Screen>
     );
 }
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#F2F4F7',
-        padding: 16,
-    },
-
-    center: {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-});

@@ -1,195 +1,175 @@
-import React from 'react';
+import { StyleSheet, Text, View } from 'react-native';
+import { router, useLocalSearchParams } from 'expo-router';
 
-import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-} from 'react-native';
+import { useTasks } from '../../src/hooks/useTasks';
+import { useTheme } from '../../src/context/ThemeContext';
+import { Screen } from '../../src/components/ui/Screen';
+import { AppButton } from '../../src/components/ui/AppButton';
+import { EmptyState } from '../../src/components/ui/EmptyState';
+import { colors } from '../../src/theme/colors';
+import { spacing } from '../../src/theme/spacing';
+import { isTaskOverdue } from '../../src/utils/task';
 
-import {
-    router,
-    useLocalSearchParams,
-} from 'expo-router';
-
-import { useTasks } from '../../src/context/TaskContext';
+const priorityLabels = {
+    low: 'Низкий',
+    medium: 'Средний',
+    high: 'Высокий',
+};
 
 export default function TaskDetailsScreen() {
-    const { id } =
-        useLocalSearchParams<{
-            id: string;
-        }>();
+    const { id } = useLocalSearchParams<{ id: string }>();
+    const { getTaskById, toggleTaskStatus, removeTask } = useTasks();
+    const { theme } = useTheme();
+    const palette = colors[theme];
 
-    const {
-        getTask,
-        toggleTask,
-        deleteTask,
-    } = useTasks();
-
-    const task = getTask(id);
+    const task = getTaskById(id);
 
     if (!task) {
         return (
-            <View style={styles.center}>
-                <Text style={styles.error}>
-                    Задача не найдена
-                </Text>
-
-                <TouchableOpacity
-                    style={styles.button}
-                    onPress={() => router.back()}
-                >
-                    <Text style={styles.buttonText}>
-                        Вернуться к списку
-                    </Text>
-                </TouchableOpacity>
-            </View>
+            <Screen>
+                <EmptyState
+                    icon="🔎"
+                    title="Задача не найдена"
+                    description="Возможно, задача была удалена или ссылка устарела."
+                    actionLabel="Вернуться назад"
+                    onAction={() => router.back()}
+                />
+            </Screen>
         );
     }
 
-    const priorityText = {
-        low: 'Низкий',
-        medium: 'Средний',
-        high: 'Высокий',
+    const overdue = isTaskOverdue(task);
+
+    const handleDelete = () => {
+        removeTask(task.id);
+        router.back();
     };
 
     return (
-        <View style={styles.container}>
-            <View style={styles.card}>
-                <Text style={styles.title}>
+        <Screen>
+            <Text style={[styles.heading, { color: palette.text }]}>
+                Подробности задачи
+            </Text>
+
+            <View
+                style={[
+                    styles.card,
+                    { backgroundColor: palette.surface, borderColor: palette.border },
+                ]}
+            >
+                <Text style={[styles.title, { color: palette.text }]}>
                     {task.title}
                 </Text>
 
-                <Text style={styles.item}>
-                    Предмет: {task.subject}
-                </Text>
-
-                <Text style={styles.item}>
-                    Приоритет:{' '}
-                    {priorityText[task.priority]}
-                </Text>
-
-                <Text style={styles.item}>
-                    Статус:{' '}
-                    {task.isCompleted
-                        ? 'Выполнено'
-                        : 'Активно'}
-                </Text>
-
-                <TouchableOpacity
-                    style={styles.completeButton}
-                    onPress={() =>
-                        toggleTask(task.id)
-                    }
-                >
-                    <Text style={styles.buttonText}>
-                        {task.isCompleted
-                            ? 'Вернуть в активные'
-                            : 'Отметить выполненной'}
+                <View style={styles.field}>
+                    <Text style={[styles.label, { color: palette.secondaryText }]}>
+                        Предмет
                     </Text>
-                </TouchableOpacity>
+                    <Text style={[styles.value, { color: palette.text }]}>
+                        {task.subject}
+                    </Text>
+                </View>
 
-                <TouchableOpacity
-                    style={styles.editButton}
+                <View style={styles.field}>
+                    <Text style={[styles.label, { color: palette.secondaryText }]}>
+                        Приоритет
+                    </Text>
+                    <Text style={[styles.value, { color: palette.text }]}>
+                        {priorityLabels[task.priority]}
+                    </Text>
+                </View>
+
+                <View style={styles.field}>
+                    <Text style={[styles.label, { color: palette.secondaryText }]}>
+                        Статус
+                    </Text>
+                    <Text style={[styles.value, { color: palette.text }]}>
+                        {task.status === 'completed' ? 'Завершена' : 'Активна'}
+                    </Text>
+                </View>
+
+                <View style={styles.field}>
+                    <Text style={[styles.label, { color: palette.secondaryText }]}>
+                        Создана
+                    </Text>
+                    <Text style={[styles.value, { color: palette.text }]}>
+                        {new Date(task.createdAt).toLocaleString()}
+                    </Text>
+                </View>
+
+                {task.dueDate ? (
+                    <View style={styles.field}>
+                        <Text style={[styles.label, { color: palette.secondaryText }]}>
+                            Срок выполнения
+                        </Text>
+                        <Text
+                            style={[
+                                styles.value,
+                                { color: overdue ? palette.danger : palette.text },
+                            ]}
+                        >
+                            {task.dueDate}
+                            {overdue ? ' — просрочена' : ''}
+                        </Text>
+                    </View>
+                ) : null}
+            </View>
+
+            <View style={styles.actions}>
+                <AppButton
+                    title={task.status === 'completed' ? 'Вернуть в активные' : 'Завершить задачу'}
+                    onPress={() => toggleTaskStatus(task.id)}
+                />
+                <AppButton
+                    title="Редактировать"
+                    variant="secondary"
                     onPress={() =>
                         router.push({
                             pathname: '/task/edit/[id]',
-                            params: {
-                                id: task.id,
-                            },
+                            params: { id: task.id },
                         })
                     }
-                >
-                    <Text style={styles.buttonText}>
-                        Редактировать
-                    </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                    style={styles.deleteButton}
-                    onPress={() => {
-                        deleteTask(task.id);
-                        router.back();
-                    }}
-                >
-                    <Text style={styles.buttonText}>
-                        Удалить
-                    </Text>
-                </TouchableOpacity>
+                />
+                <AppButton
+                    title="Удалить задачу"
+                    variant="secondary"
+                    onPress={handleDelete}
+                />
+                <AppButton
+                    title="Назад"
+                    variant="secondary"
+                    onPress={() => router.back()}
+                />
             </View>
-        </View>
+        </Screen>
     );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#F2F4F7',
-        padding: 16,
-    },
-
-    card: {
-        backgroundColor: '#FFFFFF',
-        borderRadius: 12,
-        padding: 20,
-    },
-
-    title: {
+    heading: {
         fontSize: 24,
-        fontWeight: 'bold',
-        marginBottom: 20,
+        fontWeight: '700',
     },
-
-    item: {
+    card: {
+        padding: spacing.md,
+        borderRadius: 12,
+        borderWidth: 1,
+        gap: spacing.md,
+    },
+    title: {
+        fontSize: 22,
+        fontWeight: '700',
+    },
+    field: {
+        gap: spacing.xs,
+    },
+    label: {
+        fontSize: 13,
+    },
+    value: {
         fontSize: 16,
-        marginBottom: 12,
     },
-
-    completeButton: {
-        backgroundColor: '#4CAF50',
-        padding: 14,
-        borderRadius: 8,
-        alignItems: 'center',
-        marginTop: 10,
-    },
-
-    editButton: {
-        backgroundColor: '#2196F3',
-        padding: 14,
-        borderRadius: 8,
-        alignItems: 'center',
-        marginTop: 10,
-    },
-
-    deleteButton: {
-        backgroundColor: '#E53935',
-        padding: 14,
-        borderRadius: 8,
-        alignItems: 'center',
-        marginTop: 10,
-    },
-
-    button: {
-        backgroundColor: '#2196F3',
-        padding: 14,
-        borderRadius: 8,
-        marginTop: 20,
-    },
-
-    buttonText: {
-        color: '#FFFFFF',
-        fontWeight: 'bold',
-        textAlign: 'center',
-    },
-
-    center: {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-
-    error: {
-        fontSize: 18,
-        marginBottom: 10,
+    actions: {
+        gap: spacing.sm,
     },
 });

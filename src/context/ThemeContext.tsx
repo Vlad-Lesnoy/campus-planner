@@ -1,110 +1,74 @@
-import React, {
+import {
     createContext,
     useContext,
     useEffect,
     useState,
-    ReactNode,
+    type ReactNode,
 } from 'react';
-
-import {
-    ActivityIndicator,
-    View,
-} from 'react-native';
-
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export type ThemeMode = 'light' | 'dark';
+import type { ThemeMode } from '../theme/colors';
+
+const THEME_STORAGE_KEY = '@campus-planner/theme';
 
 interface ThemeContextType {
     theme: ThemeMode;
     setTheme: (theme: ThemeMode) => void;
-    isLoading: boolean;
+    toggleTheme: () => void;
+    isThemeLoading: boolean;
 }
 
-const ThemeContext =
-    createContext<ThemeContextType | undefined>(
-        undefined
-    );
+const ThemeContext = createContext<ThemeContextType | undefined>(
+    undefined
+);
 
-const THEME_STORAGE_KEY = '@campus-planner/theme';
-
-export function ThemeProvider({
-                                  children,
-                              }: {
-    children: ReactNode;
-}) {
-    const [theme, setThemeState] =
-        useState<ThemeMode>('light');
-
-    const [isLoading, setIsLoading] =
-        useState(true);
+export function ThemeProvider({ children }: { children: ReactNode }) {
+    const [theme, setThemeState] = useState<ThemeMode>('light');
+    const [isThemeLoading, setIsThemeLoading] = useState(true);
 
     useEffect(() => {
-        const loadTheme = async () => {
-            try {
-                const savedTheme =
-                    await AsyncStorage.getItem(
-                        THEME_STORAGE_KEY
-                    );
+        let mounted = true;
 
-                if (
-                    savedTheme === 'light' ||
-                    savedTheme === 'dark'
-                ) {
-                    setThemeState(savedTheme);
+        async function loadTheme() {
+            try {
+                const saved = await AsyncStorage.getItem(THEME_STORAGE_KEY);
+
+                if (mounted && (saved === 'light' || saved === 'dark')) {
+                    setThemeState(saved);
                 }
             } catch (error) {
-                console.log(
-                    'Ошибка загрузки темы:',
-                    error
-                );
+                console.error('Не удалось загрузить тему:', error);
             } finally {
-                setIsLoading(false);
+                if (mounted) {
+                    setIsThemeLoading(false);
+                }
             }
-        };
+        }
 
-        loadTheme();
+        void loadTheme();
+
+        return () => {
+            mounted = false;
+        };
     }, []);
 
-    const setTheme = async (
-        newTheme: ThemeMode
-    ) => {
-        setThemeState(newTheme);
+    const setTheme = (nextTheme: ThemeMode) => {
+        setThemeState(nextTheme);
 
-        try {
-            await AsyncStorage.setItem(
-                THEME_STORAGE_KEY,
-                newTheme
-            );
-        } catch (error) {
-            console.log(
-                'Ошибка сохранения темы:',
-                error
-            );
-        }
+        AsyncStorage.setItem(THEME_STORAGE_KEY, nextTheme).catch(
+            (error: unknown) => {
+                console.error('Не удалось сохранить тему:', error);
+            }
+        );
     };
 
-    if (isLoading) {
-        return (
-            <View
-                style={{
-                    flex: 1,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                }}
-            >
-                <ActivityIndicator size="large" />
-            </View>
-        );
-    }
+    const toggleTheme = () => {
+        setTheme(theme === 'light' ? 'dark' : 'light');
+    };
 
     return (
         <ThemeContext.Provider
-            value={{
-                theme,
-                setTheme,
-                isLoading,
-            }}
+            value={{ theme, setTheme, toggleTheme, isThemeLoading }}
         >
             {children}
         </ThemeContext.Provider>
@@ -115,9 +79,7 @@ export function useTheme() {
     const context = useContext(ThemeContext);
 
     if (!context) {
-        throw new Error(
-            'useTheme должен использоваться внутри ThemeProvider'
-        );
+        throw new Error('useTheme должен использоваться внутри ThemeProvider');
     }
 
     return context;
