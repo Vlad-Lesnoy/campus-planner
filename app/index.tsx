@@ -10,14 +10,26 @@ import { AppButton } from '../src/components/ui/AppButton';
 import { AppInput } from '../src/components/ui/AppInput';
 import { EmptyState } from '../src/components/ui/EmptyState';
 import { TaskCard } from '../src/components/task/TaskCard';
-import { countTasks, filterTasks, sortTasksByPriority } from '../src/utils/task';
+import { ProgressBar } from '../src/components/ui/ProgressBar';
+import {
+    countTasks,
+    filterTasks,
+    sortTasksByPriority,
+} from '../src/utils/task';
 import { colors } from '../src/theme/colors';
 import { spacing } from '../src/theme/spacing';
 
 export default function HomeScreen() {
-    const { tasks, isTasksLoading, removeTask, toggleTaskStatus } = useTasks();
+    const {
+        tasks,
+        isTasksLoading,
+        removeTask,
+        toggleTaskStatus,
+    } = useTasks();
+
     const { theme } = useTheme();
     const palette = colors[theme];
+
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState<
         'all' | TaskStatus
@@ -32,7 +44,7 @@ export default function HomeScreen() {
             statusFilter === 'all'
                 ? searchedTasks
                 : searchedTasks.filter(
-                    (task) => task.status === statusFilter
+                    (task) => task.status === statusFilter,
                 );
 
         return sortTasksByPriority(filteredTasks);
@@ -41,9 +53,15 @@ export default function HomeScreen() {
     return (
         <Screen>
             <View style={styles.header}>
-                <Text style={[styles.title, { color: palette.text }]}>
+                <Text
+                    style={[
+                        styles.title,
+                        { color: palette.text },
+                    ]}
+                >
                     Учебные задачи
                 </Text>
+
                 <Text style={{ color: palette.secondaryText }}>
                     Планируй учёбу и следи за выполнением заданий
                 </Text>
@@ -52,22 +70,56 @@ export default function HomeScreen() {
             <View
                 style={[
                     styles.statistics,
-                    { backgroundColor: palette.surface, borderColor: palette.border },
+                    {
+                        backgroundColor: palette.surface,
+                        borderColor: palette.border,
+                    },
                 ]}
             >
                 <View style={styles.statisticItem}>
-                    <Text style={[styles.statisticNumber, { color: palette.primary }]}>
+                    <Text
+                        style={[
+                            styles.statisticNumber,
+                            { color: palette.primary },
+                        ]}
+                    >
                         {stats.active}
                     </Text>
-                    <Text style={{ color: palette.secondaryText }}>Активных</Text>
+
+                    <Text style={{ color: palette.secondaryText }}>
+                        Активных
+                    </Text>
                 </View>
 
                 <View style={styles.statisticItem}>
-                    <Text style={[styles.statisticNumber, { color: palette.success }]}>
+                    <Text
+                        style={[
+                            styles.statisticNumber,
+                            { color: palette.success },
+                        ]}
+                    >
                         {stats.completed}
                     </Text>
-                    <Text style={{ color: palette.secondaryText }}>Завершённых</Text>
+
+                    <Text style={{ color: palette.secondaryText }}>
+                        Завершённых
+                    </Text>
                 </View>
+            </View>
+
+            <View
+                style={[
+                    styles.progressCard,
+                    {
+                        backgroundColor: palette.surface,
+                        borderColor: palette.border,
+                    },
+                ]}
+            >
+                <ProgressBar
+                    completed={stats.completed}
+                    total={stats.total}
+                />
             </View>
 
             <AppInput
@@ -81,7 +133,11 @@ export default function HomeScreen() {
                 <View style={styles.filterButton}>
                     <AppButton
                         title="Все"
-                        variant={statusFilter === 'all' ? 'primary' : 'secondary'}
+                        variant={
+                            statusFilter === 'all'
+                                ? 'primary'
+                                : 'secondary'
+                        }
                         onPress={() => setStatusFilter('all')}
                     />
                 </View>
@@ -89,7 +145,11 @@ export default function HomeScreen() {
                 <View style={styles.filterButton}>
                     <AppButton
                         title="Активные"
-                        variant={statusFilter === 'active' ? 'primary' : 'secondary'}
+                        variant={
+                            statusFilter === 'active'
+                                ? 'primary'
+                                : 'secondary'
+                        }
                         onPress={() => setStatusFilter('active')}
                     />
                 </View>
@@ -97,7 +157,11 @@ export default function HomeScreen() {
                 <View style={styles.filterButton}>
                     <AppButton
                         title="Выполненные"
-                        variant={statusFilter === 'completed' ? 'primary' : 'secondary'}
+                        variant={
+                            statusFilter === 'completed'
+                                ? 'primary'
+                                : 'secondary'
+                        }
                         onPress={() => setStatusFilter('completed')}
                     />
                 </View>
@@ -110,6 +174,7 @@ export default function HomeScreen() {
                         onPress={() => router.push('/task/new')}
                     />
                 </View>
+
                 <View style={styles.actionButton}>
                     <AppButton
                         title="Настройки"
@@ -137,16 +202,21 @@ export default function HomeScreen() {
                                     params: { id: item.id },
                                 })
                             }
-                            onToggleStatus={() => toggleTaskStatus(item.id)}
+                            onToggleStatus={() =>
+                                toggleTaskStatus(item.id)
+                            }
                             onDelete={() => removeTask(item.id)}
                         />
                     )}
-                    ItemSeparatorComponent={() => <View style={{ height: spacing.sm }} />}
+                    ItemSeparatorComponent={() => (
+                        <View style={{ height: spacing.sm }} />
+                    )}
                     ListEmptyComponent={
                         <EmptyState
                             icon={search.trim() ? '🔎' : '📚'}
                             title={
-                                search.trim() || statusFilter !== 'all'
+                                search.trim() ||
+                                statusFilter !== 'all'
                                     ? 'Задачи не найдены'
                                     : 'Пока нет задач'
                             }
@@ -159,9 +229,15 @@ export default function HomeScreen() {
                                             ? 'Завершённых задач пока нет.'
                                             : 'Добавь первую задачу, чтобы начать планирование.'
                             }
-                            actionLabel={search.trim() ? undefined : 'Добавить задачу'}
+                            actionLabel={
+                                search.trim()
+                                    ? undefined
+                                    : 'Добавить задачу'
+                            }
                             onAction={
-                                search.trim() ? undefined : () => router.push('/task/new')
+                                search.trim()
+                                    ? undefined
+                                    : () => router.push('/task/new')
                             }
                         />
                     }
@@ -195,6 +271,11 @@ const styles = StyleSheet.create({
     statisticNumber: {
         fontSize: 24,
         fontWeight: '700',
+    },
+    progressCard: {
+        padding: spacing.md,
+        borderWidth: 1,
+        borderRadius: 12,
     },
     mainActions: {
         flexDirection: 'row',
